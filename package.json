@@ -1,0 +1,15 @@
+{
+  "name": "rentok-llm-gateway",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Minimal LLM Gateway Monorepo - Backend Service and Frontend Admin Dashboard",
+  "scripts": {
+    "start": "npm start --prefix backend",
+    "backend": "npm start --prefix backend",
+    "dev:backend": "npm run dev --prefix backend",
+    "frontend": "npm run dev --prefix frontend",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "build:frontend": "npm run build --prefix frontend",
+    "install:all": "npm install --prefix backend && npm install --prefix frontend"
+  }
+}

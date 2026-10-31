@@ -1,0 +1,19 @@
+{
+  "name": "minimal-llm-gateway",
+  "version": "1.0.0",
+  "description": "Minimal LLM Gateway with Virtual API Key Management and Budget Enforcement",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "dotenv": "^18.0.9",
+    "express": "^5.3.0",
+    "mongoose": "^9.11.4"
+  }
+}
