@@ -1,5 +1,5 @@
 const budgetService = require("../services/budget.service");
-const llmService = require("../services/llm/llm.service");
+const geminiProvider = require("../services/llm/gemini.provider");
 const usageService = require("../services/usage.service");
 const calculateCost = require("../utils/calculateCost");
 
@@ -7,13 +7,13 @@ async function chatCompletions(req, res, next) {
   const { model, messages, temperature, max_tokens } = req.body;
   const virtualKey = req.virtualKey;
 
-// Pehle atomic quota reserve karte hain - limit exhaust hone par yahi se 429 throw hota hai
+  // Pehle atomic quota reserve karte hain - limit exhaust hone par yahi se 429 throw hota hai
   await budgetService.reserveRequestQuota(virtualKey._id);
 
   const startTime = Date.now();
 
   try {
-    const result = await llmService.generateChatCompletion({
+    const response = await geminiProvider.chatCompletion({
       model,
       messages,
       temperature,
@@ -21,7 +21,7 @@ async function chatCompletions(req, res, next) {
     });
 
     const durationMs = Date.now() - startTime;
-    const usage = result.response.usage || {
+    const usage = response.usage || {
       prompt_tokens: 0,
       completion_tokens: 0,
       total_tokens: 0
@@ -37,7 +37,7 @@ async function chatCompletions(req, res, next) {
     await usageService.logUsage({
       keyId: virtualKey._id,
       model,
-      provider: result.provider,
+      provider: "gemini",
       inputTokens: usage.prompt_tokens,
       outputTokens: usage.completion_tokens,
       totalTokens: usage.total_tokens,
@@ -47,7 +47,7 @@ async function chatCompletions(req, res, next) {
       durationMs
     });
 
-    return res.status(200).json(result.response);
+    return res.status(200).json(response);
   } catch (err) {
     const durationMs = Date.now() - startTime;
 

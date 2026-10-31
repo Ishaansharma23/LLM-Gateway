@@ -35,8 +35,8 @@ Client
   │ (findOneAndUpdate with $expr: { $lt: ["$requestsUsed", "$requestLimit"] })
   │ ── If limit reached ──▶ Return HTTP 429 Too Many Requests
   ▼
-[LLM Provider Dispatcher] (src/services/llm/llm.service.js)
-  │ (Forwards to gemini.provider.js with timeout & retry)
+[LLM Provider Integration] (src/services/llm/gemini.provider.js)
+  │ (Dispatches to Gemini API with timeout & retry)
   │ ── If 5xx / timeout ──▶ Revert quota ($inc: -1) & Log failure
   ▼
 [Cost & Usage Tracking] (src/services/usage.service.js)
@@ -83,7 +83,7 @@ Enforcing budgets at the gateway layer rather than asynchronously or downstream 
 
 ## 4. Fallback Policy & Honesty on Multi-Provider Fallback
 
-A modular abstraction layer (`src/services/llm/llm.service.js`) was implemented to support multi-provider routing. However, in accordance with the project guidelines:
+Direct provider integration (`src/services/llm/gemini.provider.js`) is implemented for Google Gemini without unnecessary wrapper abstractions. In accordance with the project guidelines:
 - **No Fake Fallback**: We did NOT create a dummy secondary provider that pretends to fall back to Anthropic or OpenAI using fake responses.
 - **Provider Status**: Only Google Gemini is wired with a live adapter. If Gemini fails after bounded retries, the error is returned transparently as a 502/504 with structured telemetry.
 
