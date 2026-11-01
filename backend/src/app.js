@@ -43,6 +43,18 @@ app.get("/health", (req, res) => {
   });
 });
 
+// Serverless environments me MongoDB connection ensure karne ke liye middleware
+app.use(async (req, res, next) => {
+  try {
+    const { connectDatabase } = require("./config/database");
+    const env = require("./config/env");
+    await connectDatabase(env.MONGODB_URL);
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
+
 const adminRateLimiter = createRateLimiter({
   windowMs: 60000,
   maxRequests: 60,
