@@ -1,6 +1,6 @@
 # Minimal LLM Gateway
 
-A robust, production-ready HTTP backend gateway sitting between API clients and upstream LLM providers (Google Gemini). Built with Node.js, Express, MongoDB, and Mongoose for the RentOk Backend Intern Assignment.
+A robust, production-ready HTTP backend gateway sitting between API clients and upstream LLM providers (Google Gemini). Built with Node.js, Express, MongoDB, and Mongoose.
 
 ---
 
