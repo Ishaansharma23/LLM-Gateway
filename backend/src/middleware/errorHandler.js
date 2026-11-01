@@ -1,4 +1,5 @@
-function notFoundHandler(req, res, next) {
+
+function notFoundHandler(req, res) {
   res.status(404).json({
     error: {
       message: `Route not found: ${req.method} ${req.originalUrl}`,
@@ -9,48 +10,31 @@ function notFoundHandler(req, res, next) {
 }
 
 function errorHandler(err, req, res, next) {
-  if (err instanceof SyntaxError && err.status === 400 && "body" in err) {
-    return res.status(400).json({
-      error: {
-        message: "Malformed JSON payload in request body",
-        type: "invalid_request_error",
-        status: 400
-      }
-    });
+  let status = err.status || 500;
+  let message = err.message || "Something went wrong";
+  let type = err.type || "server_error";
+
+  // Invalid JSON
+  if (err instanceof SyntaxError && err.status === 400) {
+    status = 400;
+    message = "Invalid JSON request body";
+    type = "invalid_request_error";
   }
 
-  if (err.name === "ValidationError") {
-    const messages = Object.values(err.errors).map((e) => e.message);
-    return res.status(400).json({
-      error: {
-        message: messages.join("; "),
-        type: "invalid_request_error",
-        status: 400
-      }
-    });
+  // MongoDB validation error
+  else if (err.name === "ValidationError" || err.name === "CastError") {
+    status = 400;
+    message = err.message;
+    type = "invalid_request_error";
   }
 
-  if (err.name === "CastError") {
-    return res.status(400).json({
-      error: {
-        message: `Invalid resource identifier: ${err.value}`,
-        type: "invalid_request_error",
-        status: 400
-      }
-    });
-  }
-
-  const status = Number.isInteger(err.status) ? err.status : (Number.isInteger(err.statusCode) ? err.statusCode : 500);
-  const type = err.type || (status >= 500 ? "server_error" : "invalid_request_error");
-  const message = status >= 500
-    ? (err.isOperational ? err.message : "An internal server error occurred")
-    : (err.message || "Request failed");
-
+  // Hide internal server errors
   if (status >= 500) {
-    console.error(`[Internal Error] ${req.method} ${req.originalUrl}:`, err.message);
+    console.error(err);
+    message = "Internal server error";
   }
 
-  return res.status(status).json({
+  res.status(status).json({
     error: {
       message,
       type,

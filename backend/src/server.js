@@ -1,5 +1,6 @@
+const mongoose = require("mongoose");
 const env = require("./config/env");
-const { connectDatabase, disconnectDatabase } = require("./config/database");
+const connectDatabase = require("./config/database");
 const app = require("./app");
 
 let server;
@@ -7,7 +8,7 @@ let server;
 async function startServer() {
   try {
     console.log("[Bootstrap] Connecting to database...");
-    await connectDatabase(env.MONGODB_URL);
+    await connectDatabase();
 
     server = app.listen(env.PORT, () => {
       console.log(`[Server] Minimal LLM Gateway listening on port ${env.PORT} (${env.NODE_ENV})`);
@@ -25,7 +26,7 @@ async function gracefulShutdown(signal) {
     server.close(async () => {
       console.log("[Shutdown] HTTP server closed.");
       try {
-        await disconnectDatabase();
+        await mongoose.disconnect();
         console.log("[Shutdown] Process exiting cleanly.");
         process.exit(0);
       } catch (err) {

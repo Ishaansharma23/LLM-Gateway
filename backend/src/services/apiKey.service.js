@@ -43,15 +43,11 @@ async function deactivateVirtualKey(keyId) {
   const updatedKey = await VirtualKey.findByIdAndUpdate(
     keyId,
     { status: "revoked" },
-    { returnDocument: "after", select: "-keyHash" }
-  ).lean();
+    { new: true }
+  );
 
   if (!updatedKey) {
-    const error = new Error(`Virtual key with ID ${keyId} not found`);
-    error.status = 404;
-    error.type = "not_found_error";
-    error.isOperational = true;
-    throw error;
+    throw new Error("Virtual key not found");
   }
 
   return updatedKey;
