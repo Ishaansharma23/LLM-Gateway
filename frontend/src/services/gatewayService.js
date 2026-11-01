@@ -24,7 +24,8 @@ export const gatewayService = {
 
     try {
       const startTime = Date.now();
-      const res = await axios.post('/v1/chat/completions', payload, {
+      const baseUrl = import.meta.env.VITE_API_URL || '';
+      const res = await axios.post(`${baseUrl}/v1/chat/completions`, payload, {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${virtualKey.trim()}`
