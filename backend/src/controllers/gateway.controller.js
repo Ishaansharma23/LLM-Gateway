@@ -1,3 +1,4 @@
+const { MODEL_PRICING } = require("../config/pricing");
 const budgetService = require("../services/budget.service");
 const geminiProvider = require("../services/llm/gemini.provider");
 const usageService = require("../services/usage.service");
@@ -75,6 +76,52 @@ async function chatCompletions(req, res, next) {
   }
 }
 
+async function listModels(req, res, next) {
+  try {
+    const models = Object.keys(MODEL_PRICING).map((modelId) => ({
+      id: modelId,
+      object: "model",
+      created: 1730419200,
+      owned_by: "google"
+    }));
+
+    return res.status(200).json({
+      object: "list",
+      data: models
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function getModel(req, res, next) {
+  try {
+    const { modelId } = req.params;
+    const normalizedId = (modelId || "").toLowerCase().trim();
+
+    if (!MODEL_PRICING[normalizedId]) {
+      return res.status(404).json({
+        error: {
+          message: `Model '${modelId}' not found`,
+          type: "invalid_request_error",
+          status: 404
+        }
+      });
+    }
+
+    return res.status(200).json({
+      id: normalizedId,
+      object: "model",
+      created: 1730419200,
+      owned_by: "google"
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
-  chatCompletions
+  chatCompletions,
+  listModels,
+  getModel
 };
