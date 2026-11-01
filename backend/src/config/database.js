@@ -1,57 +1,39 @@
 const mongoose = require("mongoose");
+const env = require("./env");
 
-let isListenersRegistered = false;
 let cachedPromise = null;
 
-// Event listeners should be registered only once on the connection singleton
-function registerConnectionListeners() {
-  if (isListenersRegistered) return;
-  isListenersRegistered = true;
-
-  mongoose.connection.on("connected", () => {
-    console.log("[Database] Connected to MongoDB");
-  });
-
-  mongoose.connection.on("error", (err) => {
-    console.error("[Database] Connection error:", err.message);
-  });
-
-  mongoose.connection.on("disconnected", () => {
-    console.warn("[Database] Disconnected");
-  });
-}
-
-async function connectDatabase(uri) {
+async function connectDatabase(uri = env.MONGODB_URL) {
   if (!uri) {
     throw new Error("MongoDB connection URI is required");
   }
-
-  registerConnectionListeners();
 
   // 1. Reuse existing connection if already connected (State: 1 = connected)
   if (mongoose.connection.readyState === 1) {
     return mongoose.connection;
   }
 
-  // 2. If connection is currently in progress (State: 2 = connecting), await existing promise
+  // 2. If connection is in progress (State: 2 = connecting), await existing promise
   if (cachedPromise && mongoose.connection.readyState === 2) {
-    return await cachedPromise;
+    return cachedPromise;
   }
 
-  const options = {
-    serverSelectionTimeoutMS: 5000,
-    autoIndex: true
-  };
+  // 3. Connect and cache the connection promise to avoid duplicate connections
+  cachedPromise = mongoose
+    .connect(uri, {
+      serverSelectionTimeoutMS: 5000,
+      autoIndex: true
+    })
+    .then((m) => {
+      console.log("[Database] Connected to MongoDB");
+      return m;
+    })
+    .catch((err) => {
+      cachedPromise = null;
+      throw err;
+    });
 
-  cachedPromise = mongoose.connect(uri, options);
-
-  try {
-    const conn = await cachedPromise;
-    return conn;
-  } catch (err) {
-    cachedPromise = null;
-    throw err;
-  }
+  return cachedPromise;
 }
 
 async function disconnectDatabase() {
