@@ -8,7 +8,7 @@ dotenv.config();
 function validateEnv() {
   const errors = [];
 
-  const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost:27017/rentok-llm-gateway";
+  const MONGODB_URL = process.env.MONGODB_URL || process.env.MONGODB_URI || "mongodb://localhost:27017/rentok-llm-gateway";
   const ADMIN_SECRET = process.env.ADMIN_SECRET;
   const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
   const PORT = parseInt(process.env.PORT || "3000", 10);
@@ -35,7 +35,8 @@ function validateEnv() {
   return Object.freeze({
     PORT,
     NODE_ENV,
-    MONGODB_URI,
+    MONGODB_URL,
+    MONGODB_URI: MONGODB_URL,
     ADMIN_SECRET: ADMIN_SECRET.trim(),
     GEMINI_API_KEY: GEMINI_API_KEY.trim()
   });

@@ -11,7 +11,7 @@ export const gatewayService = {
     }
 
     const payload = {
-      model: model || 'gemini-2.5-flash',
+      model: model || 'gemini-3.5-flash',
       messages
     };
 

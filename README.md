@@ -106,7 +106,7 @@ PORT=3000
 NODE_ENV=development
 
 # MongoDB Connection String
-MONGODB_URI=mongodb://localhost:27017/rentok-llm-gateway
+MONGODB_URL=mongodb://localhost:27017/rentok-llm-gateway
 
 # Admin Secret Key (used to authorize /admin/* endpoints)
 ADMIN_SECRET=replace_with_a_secure_admin_secret_minimum_8_chars
@@ -371,7 +371,7 @@ Token pricing is sourced from official published Google Cloud / Google AI Studio
 2. **Configure Environment Variables in Render Dashboard**:
    - `PORT`: `3000` (or Render default)
    - `NODE_ENV`: `production`
-   - `MONGODB_URI`: `<Your MongoDB Atlas connection URI>`
+   - `MONGODB_URL`: `<Your MongoDB Atlas connection URI>`
    - `ADMIN_SECRET`: `<Strong random admin secret>`
    - `GEMINI_API_KEY`: `<Your official Gemini API Key>`
 3. **Health Check Path**:

@@ -7,7 +7,7 @@ let server;
 async function startServer() {
   try {
     console.log("[Bootstrap] Connecting to database...");
-    await connectDatabase(env.MONGODB_URI);
+    await connectDatabase(env.MONGODB_URL);
 
     server = app.listen(env.PORT, () => {
       console.log(`[Server] Minimal LLM Gateway listening on port ${env.PORT} (${env.NODE_ENV})`);

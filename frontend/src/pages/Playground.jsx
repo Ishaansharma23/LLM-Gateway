@@ -22,10 +22,10 @@ import {
 } from 'lucide-react';
 
 const PRESET_MODELS = [
-  { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', tag: 'Fast & Default' },
-  { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', tag: 'High Speed' },
-  { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash', tag: 'Standard' },
-  { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', tag: 'High Reasoning' },
+  { id: 'gemini-3.5-flash', name: 'Gemini 3.5 Flash', tag: 'Fast & Recommended' },
+  { id: 'gemini-flash-lite-latest', name: 'Gemini Flash Lite', tag: 'Lowest Latency' },
+  { id: 'gemini-3.8-flash', name: 'Gemini 3.8 Flash', tag: 'Latest Generation' },
+  { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', tag: 'Standard' },
 ];
 
 const SAMPLE_PROMPTS = [
@@ -37,7 +37,7 @@ const SAMPLE_PROMPTS = [
 export default function Playground() {
   const [virtualKey, setVirtualKey] = useState('');
   const [showKey, setShowKey] = useState(false);
-  const [model, setModel] = useState('gemini-2.5-flash');
+  const [model, setModel] = useState('gemini-3.5-flash');
   const [prompt, setPrompt] = useState('Explain Node.js in simple words');
   const [temperature, setTemperature] = useState(0.7);
   const [maxTokens, setMaxTokens] = useState(1000);
