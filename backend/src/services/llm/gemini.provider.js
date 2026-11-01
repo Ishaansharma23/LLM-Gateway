@@ -7,30 +7,60 @@ const MAX_RETRIES = 2;
 
 // OpenAI messages format ko Gemini ke contents format me translate karte hain
 function translateMessages(messages) {
-  let systemInstruction = null;
+  const systemParts = [];
   const contents = [];
 
   for (const msg of messages) {
-    const role = msg.role.toLowerCase();
+    const role = (msg.role || "").toLowerCase().trim();
+    const content = typeof msg.content === "string" ? msg.content : "";
 
     if (role === "system") {
-      systemInstruction = {
-        parts: [{ text: msg.content }]
-      };
+      if (content) {
+        systemParts.push({ text: content });
+      }
     } else if (role === "assistant" || role === "model") {
       contents.push({
         role: "model",
-        parts: [{ text: msg.content }]
+        parts: [{ text: content }]
       });
     } else {
       contents.push({
         role: "user",
-        parts: [{ text: msg.content }]
+        parts: [{ text: content }]
       });
     }
   }
 
+  const systemInstruction = systemParts.length > 0 ? { parts: systemParts } : null;
   return { systemInstruction, contents };
+}
+
+// Maps Gemini finishReason to OpenAI-compatible finish_reason field
+function mapFinishReason(geminiReason) {
+  if (!geminiReason) return "stop";
+  switch (geminiReason.toUpperCase()) {
+    case "STOP":
+      return "stop";
+    case "MAX_TOKENS":
+      return "length";
+    case "SAFETY":
+    case "RECITATION":
+    case "BLOCKLIST":
+    case "PROHIBITED_CONTENT":
+    case "SPII":
+      return "content_filter";
+    default:
+      return "stop";
+  }
+}
+
+// Checks if model supports thinkingConfig (e.g. Gemini 2.5 / 3.x Flash & Pro models)
+function supportsThinkingConfig(modelName) {
+  const normalized = (modelName || "").toLowerCase();
+  return (
+    (normalized.includes("2.5") || normalized.includes("3.")) &&
+    !normalized.includes("lite")
+  );
 }
 
 // Transient error check karte hain taaki retry kiya ja sake (5xx, 429, timeout)
@@ -56,6 +86,12 @@ async function chatCompletion({ model, messages, temperature, maxTokens }) {
   const generationConfig = {};
   if (temperature !== undefined) generationConfig.temperature = Number(temperature);
   if (maxTokens !== undefined) generationConfig.maxOutputTokens = Number(maxTokens);
+
+  // Disable thinking budget on reasoning models so maxOutputTokens is fully dedicated to user-facing output
+  if (supportsThinkingConfig(model)) {
+    generationConfig.thinkingConfig = { thinkingBudget: 0 };
+  }
+
   if (Object.keys(generationConfig).length > 0) requestBody.generationConfig = generationConfig;
 
   const endpointUrl = `${GEMINI_API_BASE_URL}/${encodeURIComponent(model)}:generateContent?key=${env.GEMINI_API_KEY}`;
@@ -80,6 +116,13 @@ async function chatCompletion({ model, messages, temperature, maxTokens }) {
       if (!response.ok) {
         const upstreamError = responseData.error || {};
         const errorMessage = upstreamError.message || `Gemini API returned status ${response.status}`;
+
+        // If the model rejected thinkingConfig, remove it and retry without it
+        if (response.status === 400 && requestBody.generationConfig?.thinkingConfig) {
+          delete requestBody.generationConfig.thinkingConfig;
+          continue;
+        }
+
         const transient = isTransientError(response.status, null);
 
         const error = new Error(`Provider Error: ${errorMessage}`);
@@ -98,16 +141,36 @@ async function chatCompletion({ model, messages, temperature, maxTokens }) {
 
       const candidate = responseData.candidates && responseData.candidates[0];
       let candidateText = "";
-      if (candidate && candidate.content && candidate.content.parts && candidate.content.parts.length > 0) {
-        candidateText = candidate.content.parts.map((p) => p.text || "").join("");
+      if (candidate && candidate.content && Array.isArray(candidate.content.parts)) {
+        // Filter out internal thinking parts to ensure only assistant response is returned
+        candidateText = candidate.content.parts
+          .filter((p) => !p.thought)
+          .map((p) => p.text || "")
+          .join("");
       }
 
-      const finishReason = candidate && candidate.finishReason ? candidate.finishReason.toLowerCase() : "stop";
+      const finishReason = mapFinishReason(candidate && candidate.finishReason);
 
       const usageMetadata = responseData.usageMetadata || {};
       const promptTokens = usageMetadata.promptTokenCount || 0;
-      const completionTokens = usageMetadata.candidatesTokenCount || 0;
-      const totalTokens = usageMetadata.totalTokenCount || (promptTokens + completionTokens);
+      const candidateTokens = usageMetadata.candidatesTokenCount || 0;
+      const thoughtsTokens = usageMetadata.thoughtsTokenCount || 0;
+
+      // In OpenAI format, completion_tokens covers all generated tokens so prompt_tokens + completion_tokens === total_tokens
+      const completionTokens = candidateTokens + thoughtsTokens;
+      const totalTokens = promptTokens + completionTokens;
+
+      const usage = {
+        prompt_tokens: promptTokens,
+        completion_tokens: completionTokens,
+        total_tokens: totalTokens
+      };
+
+      if (thoughtsTokens > 0) {
+        usage.completion_tokens_details = {
+          reasoning_tokens: thoughtsTokens
+        };
+      }
 
       return {
         id: `chatcmpl-${crypto.randomUUID()}`,
@@ -121,14 +184,10 @@ async function chatCompletion({ model, messages, temperature, maxTokens }) {
               role: "assistant",
               content: candidateText
             },
-            finish_reason: finishReason === "stop" ? "stop" : finishReason
+            finish_reason: finishReason
           }
         ],
-        usage: {
-          prompt_tokens: promptTokens,
-          completion_tokens: completionTokens,
-          total_tokens: totalTokens
-        }
+        usage
       };
     } catch (err) {
       const isTimeout = err.name === "TimeoutError" || err.name === "AbortError";
@@ -155,5 +214,7 @@ async function chatCompletion({ model, messages, temperature, maxTokens }) {
 module.exports = {
   chatCompletion,
   translateMessages,
+  mapFinishReason,
+  supportsThinkingConfig,
   isTransientError
 };
