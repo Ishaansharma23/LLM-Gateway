@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { API_BASE_URL, API_ENDPOINTS } from '../config/api';
 
 export const gatewayService = {
   async chatCompletion({ virtualKey, model, messages, temperature, maxTokens }) {
@@ -24,8 +25,8 @@ export const gatewayService = {
 
     try {
       const startTime = Date.now();
-      const baseUrl = import.meta.env.VITE_API_URL || '';
-      const res = await axios.post(`${baseUrl}/v1/chat/completions`, payload, {
+      const endpoint = API_ENDPOINTS?.CHAT_COMPLETIONS || `${API_BASE_URL}/v1/chat/completions`;
+      const res = await axios.post(endpoint, payload, {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${virtualKey.trim()}`
@@ -44,6 +45,21 @@ export const gatewayService = {
         message: err.response?.data?.error?.message || err.message || 'Gateway completion request failed',
         type: err.response?.data?.error?.type || 'gateway_error',
         details: err.response?.data || null
+      };
+      throw errorObj;
+    }
+  },
+
+  async getModels() {
+    try {
+      const endpoint = API_ENDPOINTS?.MODELS || `${API_BASE_URL}/v1/models`;
+      const res = await axios.get(endpoint);
+      return res.data;
+    } catch (err) {
+      const errorObj = {
+        status: err.response?.status || 500,
+        message: err.response?.data?.error?.message || err.message || 'Failed to fetch models',
+        type: err.response?.data?.error?.type || 'gateway_error'
       };
       throw errorObj;
     }

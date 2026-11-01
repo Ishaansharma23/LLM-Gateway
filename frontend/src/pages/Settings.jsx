@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAdmin } from '../context/AdminContext';
+import { API_BASE_URL } from '../config/api';
 import { 
   KeyRound, 
   ShieldCheck, 
@@ -60,7 +61,7 @@ export default function Settings() {
     } else if (res.backendHealthy && !res.authValid) {
       setFeedback({ type: 'error', text: 'Backend is healthy, but the provided admin secret is invalid.' });
     } else {
-      setFeedback({ type: 'error', text: 'Failed to reach backend server at http://localhost:3000.' });
+      setFeedback({ type: 'error', text: `Failed to reach backend server at ${API_BASE_URL}.` });
     }
   };
 
@@ -182,7 +183,7 @@ export default function Settings() {
               )}
             </div>
             <div className="mt-3 font-mono text-[11px] text-zinc-500 space-y-1">
-              <div>Endpoint: <span className="text-zinc-800">http://localhost:3000/health</span></div>
+              <div>Endpoint: <span className="text-zinc-800">{API_BASE_URL}/health</span></div>
               <div>Service: <span className="text-zinc-800">{healthData?.service || 'rentok-llm-gateway'}</span></div>
               <div>Uptime: <span className="text-zinc-800">{healthData?.uptimeSeconds ? `${healthData.uptimeSeconds}s` : '--'}</span></div>
             </div>
